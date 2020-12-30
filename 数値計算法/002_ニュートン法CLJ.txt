@@ -1,0 +1,28 @@
+
+;
+;  FILE NAME: 002_ニュートン法CLJ.txt
+;
+; 方程式 x^3 + x -1 = 0 の根をニュートン法で求める
+;
+
+(ns p002_newton)
+
+(def EPS 0.0001)
+
+(defn f [#^double x]
+   (+ (Math/pow x 3.0) x -1.0))
+
+(defn f-dash [#^double x]
+   (+ (* 3.0 (Math/pow 2.0 x)) 1.0))
+
+(defn g [#^double a]
+   (- a (/ (f a) (f-dash a))))
+
+(defn newton [#^double x]
+   (loop [a x b (g x)]
+      (if (< (Math/abs (- a b)) EPS)
+          b
+          (recur b (g b)))))
+
+(defn m []
+   (println (format "近似解 x = %6.3f" (newton 1.0))))
