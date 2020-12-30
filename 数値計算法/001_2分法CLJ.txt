@@ -1,0 +1,32 @@
+
+;  FILE NAME: 001_2分法CLJ.txt
+;
+; 方程式 x^3 + x -1 = 0 の根を2分法で求める
+;
+
+(ns p001_bin)
+
+(def EPS 0.0001)
+
+(def a (atom (double 0.0)))
+(def b (atom (double 1.0)))
+
+
+(defn f [#^double x]
+  (+ (Math/pow x 3.0) x -1.0))
+
+(defn nibun []
+  (loop []
+    (let [c (/ (+ @a @b) 2.0)]
+      (do (if (< (* (f c) (f @a)) 0.0)
+              (reset! b (double c))
+              (reset! a (double c)))
+          (if (> (Math/abs (- @a @b)) EPS)
+              (recur )
+              c)))))
+
+(defn m []
+  (do (println "x^3 + x -1 = 0 の2分法による数値計算")
+      (println (format "初期値 a = %6.3f", @a))
+      (println (format "初期値 b = %6.3f", @b))
+      (println (format "近似解 x = %6.3f", (nibun)))))
