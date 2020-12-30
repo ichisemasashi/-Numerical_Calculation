@@ -1,5 +1,130 @@
 ;
 ;  FILE NAME 003_ベアストウ法CLJ.txt
 ;
-;  方程式 x^4 - 2x^3 + 2x^2  - 50x + 62 = 0の根をベアストウ法によって求める
+;  方程式 x^4 - 2x^3 + 2x^2  - 50x + 62 = 0の
+;  根をベアストウ法によって求める
 ;
+
+(ns p003_bairstow)
+
+(def EPS 0.0001)
+
+
+;; --- 方程式の係数 ------------------------
+(def keisu-arr (make-array Double/TYPE 5))
+
+(clojure.pprint/pprint keisu-arr)
+
+(defn myset-keisu-arr-helper [x v]
+   (aset ^doubles keisu-arr x (double v)))
+
+(defn myset-keisu-arr [x0 x1 x2 x3 x4]
+   (myset-keisu-arr-helper 0 x0)
+   (myset-keisu-arr-helper 1 x1)
+   (myset-keisu-arr-helper 2 x2)
+   (myset-keisu-arr-helper 3 x3)
+   (myset-keisu-arr-helper 4 x4))
+
+(myset-keisu-arr 1.0 -2.0 2.0 -50.0 62.0)
+
+(clojure.pprint/pprint keisu-arr)
+
+;; --- 方程式の次数 ------------------------
+(def N (- (alength keisu-arr) 1))
+;; --- 2次式の係数 ------------------------
+(def p (atom (double 0.0)))
+(def q (atom (double 0.0)))
+
+
+;; --- メインループ ------------------------
+(defn myget-keisu-arr [i]
+   (aget ^doubles keisu-arr i))
+(defn m []
+   (do (println "実数部\t\t虚数部")
+       (loop [n N]
+          (let [a0 (myget-keisu-arr 0),
+                a1 (myget-keisu-arr 1),
+                a2 (myget-keisu-arr 2)]
+             (cond (= n 1) (println
+                             (format "%8.5f\t\t%8.5f"
+                                     (/ (- 0 a1) a0)
+                                     0.0))
+                   (= n 2) (root a1 a2)
+                   (= n 0) ""
+                   :else (do (bairstow n)
+                             (root @p @q)
+                             (recur (- n 2))))))))
+
+;; --- 2次式の積に変換する ------------------
+(defn bairstow [n]
+   (let [b (make-array Double/TYPE (+ n 1))
+         c (make-array Double/TYPE (+ n 1))]
+      (letfn [(get-b [i]
+                 (aget ^doubles b i))
+              (get-c [i]
+                 (aget ^doubles c i))
+              (set-b [k]
+                 (do (aset ^doubles b 0 (myget-keisu-arr 0))
+                     (aset ^doubles b 1
+                           (- (myget-keisu-arr 1)
+                              (* @p (get-b 0))))
+                     (doseq [i (range 2 (+ k 1))]
+                        (aset ^doubles b i
+                              (- (myget-keisu-arr i)
+                                 (* @p (get-b (- i 1)))
+                                 (* @q (get-b (- i 2))))))))
+              (set-c [k]
+                 (do (aset ^doubles c 0 (get-b 0))
+                     (aset ^doubles c 1
+                           (- (get-b 1)
+                              (* @p (get-c 0))))
+                     (doseq [i (range 2 (+ k 1))]
+                        (aset ^doubles c i
+                              (- (get-b i)
+                                 (* @p (get-c (- i 1)))
+                                 (* @q (get-c (- i 2))))))))
+              (e [k]
+                 (let [k-1 (- k 1), k-2 (- k 2), k-3 (- k 3)]
+                    (- (* (get-c k-2) (get-c k-2))
+                       (* (get-c k-3)
+                          (- (get-c k-1) (get-b k-1))))))
+              (dp [k]
+                 (let [k-1 (- k 1), k-2 (- k 2), k-3 (- k 3)]
+                    (/ (- (* (get-b k-1) (get-c k-2))
+                          (* (get-b k)   (get-c k-3)))
+                       (e k))))
+              (dq [k]
+                 (let [k-1 (- k 1), k-2 (- k 2)]
+                    (/ (- (* (get-b k) (get-c k-2))
+                          (* (get-b k-1)
+                             (- (get-c k-1) (get-b k-1))))
+                       (e k))))]
+         (do (reset! p (double 1.0))
+             (reset! q (double 1.0))
+             (loop []
+                (do (set-b n)
+                    (set-c n)
+                    (reset! p (+ @p (dp n)))
+                    (reset! q (+ @q (dq n)))
+                    (if (and (> (Math/abs (dp n)) EPS)
+                             (> (Math/abs (dq n)) EPS))
+                        (recur)
+                        )))
+             (dotimes [i (- n 1)]
+                (aset ^doubles keisu-arr i (get-b i)))))))
+
+
+
+;; --- 2次式の求根 -------------------------
+(defn neg [x]
+   (- 0 x))
+(defn root [#^double b #^double c]
+   (let [D (- (* b b) (* 4.0 c))]
+      (if (<= D 0)
+          (let [F (Math/sqrt (neg D))]
+             (println (format "%8.5f\t%8.5f" (/ (neg b) 2.0) (/ F 2.0)))
+             (println (format "%8.5f\t%8.5f" (/ (neg b) 2.0) (/ (neg F) 2.0))))
+          (let [F (Math/sqrt D)]
+             (println (format "%8.5f\t%8.5f" (/ (+ (neg b) F) 2.0) 0.0))
+             (println (format "%8.5f\t%8.5f" (/ (- (neg b) F) 2.0) 0.0))))))
+
