@@ -1,3 +1,15 @@
+;
+;
+;  FILE NAME: 005_ガウス-ザイデル法CLJ.txt
+;
+;   3元連立方程式
+;     2x + y + 3z = 13
+;      x + 3y + 2z = 13
+;     3x + 2y +  z = 10
+;   をガウス-ザイデル法によって解く
+;
+;
+
 (def an-eq (make-array Double/TYPE 3 4))
 (def N (alength an-eq))
 
