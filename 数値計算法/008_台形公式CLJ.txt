@@ -34,4 +34,9 @@
                                (+ (aget ^doubles y 0) @z (aget ^doubles y N)))))
           (println (format "ANS = %8.4f" @S)))))
 
-
+(defn main []
+   (let [x (map double (range xa (+ xb h) h))
+         y (map f x)
+         z (reduce + (map #(* 2.0 %) (rest (butlast y))))
+         S (* (/ h 2.0) (+ (first y) z (last y)))])
+      (println (format "ANS = %8.4f" S)))
