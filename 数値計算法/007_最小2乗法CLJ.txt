@@ -1,0 +1,124 @@
+;
+;    FILE NAME: 007_最小2乗法CLJ.txt
+;
+;   以下の点を通る関数を補間するM次の回帰曲線
+;    y = a0 + a1x + a2x^2 + ... amx^m の係数を求める。
+;     (0.0, 0.0)
+;     (1.0, 1.1)
+;     (2.0, 2.5)
+;     (3.0, 4.0)
+;     (3.1, 4.1)
+;     (5.0, 5.0)
+;
+;
+;
+
+(ns p007_saisho2)
+
+(def EPS 0.0001)
+
+;; --- 回帰曲線の次数 ----------------------
+(def M 4)
+
+
+;; --- 通過点の配列 ------------------------
+
+(def xy-arr (make-array Double/TYPE 6 2))
+
+(clojure.pprint/pprint xy-arr)
+
+(defn set-xy [i j #^double v]
+   (aset ^doubles xy-arr i j v))
+
+(defn get-xy [i j]
+   (aget ^doubles xy-arr i j))
+
+(defn set-point [n #^double vx #^double vy]
+   (set-xy n 0 vx)
+   (set-xy n 1 vy))
+
+(set-point 0 0.0 0.0)
+(set-point 1 1.0 1.1)
+(set-point 2 2.0 2.5)
+(set-point 3 3.0 4.0)
+(set-point 4 3.1 4.1)
+(set-point 5 5.0 5.0)
+
+(clojure.pprint/pprint xy-arr)
+
+
+
+(def N (alength xy-arr))
+
+;; --- ガウス-ジョルダン法 -------------------
+
+;; --- 正規方程式(Normal equation)の係数 -----
+(def ks-arr (make-array Double/TYPE (+ M 1) (+ M 2)))
+
+(clojure.pprint/pprint ks-arr)
+
+(defn get-ks [i j]
+   (aget ^doubles ks-arr i j))
+
+(defn set-ks [i j #^double v]
+   (aset ^doubles ks-arr i j v))
+
+(defn left-side []
+   (dotimes [i (+ M 1)]
+      (dotimes [j (+ M 1)]
+         (dotimes [k N]
+            (set-ks j i
+                    (+ (get-ks j i)
+                       (Math/pow (get-xy k 0) (double (+ i j)))))))))
+
+(defn right-side []
+   (dotimes [j (+ M 1)]
+      (dotimes [k N]
+         (set-ks j (+ M 1)
+                 (+ (get-ks j (+ M 1))
+                    (* (get-xy k 1) (Math/pow (get-xy k 0) j)))))))
+
+(defn normal-eq []
+   (do (left-side)
+       (right-side)))
+
+;; --- 結果表示 ----------------------------
+(defn pr-result []
+   (dotimes [i (+ 1 M)]
+      (println (format "a%d = %7.3f" i (get-ks i (+ M 1))))))
+
+;; --- ピボットとなるxyz変数の係数を1にする ----
+(defn piv1 [i pivot]
+   (dotimes [j (+ M 2)]
+      (set-ks i j (/ (get-ks i j) pivot))))
+
+;; --- 不要な項の削除 -----------------------
+(defn hakidashi [i]
+   (dotimes [k (+ M 1)]
+      (let [del (get-ks k i)]
+         (doseq [j (range 0 (+ M 2))]
+            (if (not= k i)
+                (set-ks k j (- (get-ks k j)
+                               (* del (get-ks i j)))))))))
+
+;; --- ガウス-ジョルダン法 -------------------
+(defn jordan []
+   (loop [i 0]
+      (if (<= i M)
+          (let [pivot (get-ks i i)]
+             (if (< (Math/abs pivot) EPS)
+                 (do (println (str "ピボットが許容誤差以下:" i))
+                     1)
+                 (do (piv1 i pivot)
+                     (hakidashi i)
+                     (recur (+ i 1)))))
+          0)))
+
+;; --- メインループ -------------------------
+
+(defn m []
+   (do (normal-eq)
+       (let [res (jordan)]
+          (if (= res 0)
+              (pr-result)))))
+
