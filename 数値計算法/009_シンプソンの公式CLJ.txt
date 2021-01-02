@@ -1,0 +1,31 @@
+;
+;   FILE NAME: 009_シンプソンの公式CLJ.txt
+;
+;   関数 y = x^4 + 2x、積分区間(xa, xb)のシンプソンの公式による数値積分
+;
+
+(ns p009_simpson)
+
+(def N 30) ; 積分刻み数
+
+;; --- 積分区間 ----------------------------
+(def xa (double 0.0))
+(def xb (double 3.0))
+
+(def h (double (/ (- xb xa) N))) ; 微小区間
+
+;; --- 被積分関数 --------------------------
+(defn f [#^double x]
+   (+ (Math/pow x 4.0) (* x 2.0)))
+
+;; --- メインループ -------------------------
+(defn main []
+   (let [y (map f (map #(+ xa (* h %)) (range (+ N 1))))
+         y-even (map first (filter #(even? (second %))
+                                    (map #(list %1 %2) y (range))))
+         y-odd (map first (filter #(odd? (second %))
+                                    (map #(list %1 %2) y (range))))
+         z1 (reduce + (map #(* 4.0 %) y-odd))
+         z2 (reduce + (map #(* 2.0 %) (rest (butlast y-even))))
+         S (* (/ h 3.0) (+ (first y) z1 z2 (last y)))]
+      (println (format "ANS = %8.4f" S))))
