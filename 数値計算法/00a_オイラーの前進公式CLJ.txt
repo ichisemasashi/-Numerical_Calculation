@@ -1,0 +1,32 @@
+;
+;   FILE NAME: 00a_オイラーの前進公式CLJ.txt
+;
+;   dy/dx = 2x, 初期値(0, 0)において、オイラーの前進公式に
+;   よる1階の微分方程式の数値解法
+;
+;
+
+(ns p00a_forward-euler)
+
+(def EPS 0.00000001)
+
+;; --- 初期値 ------------------------------
+(def x0 (double 0.0))
+(def y0 (double 0.0))
+
+(def h (double 0.01)) ; 刻み
+(def dx (double 1.0)) ; 解を打ち出す周期
+(def xmax (double 10.0)) ; 打ち出す範囲
+
+(defn f [#^double x]
+   (* 2.0 x))
+
+(def x (map double (range x0 (+ xmax h) h)))
+(def fx (map f x))
+
+(def y (reverse (reduce #(cons (+ (reduce + %1) %2) %1) '() (map #(* h %) fx))))
+(def n (/ dx h))
+(take-nth n x)
+(take-nth n y)
+
+
