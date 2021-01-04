@@ -1,0 +1,70 @@
+;
+;   FILE NAME: 00c_高階常微分方程式CLJ.txt
+;
+;   2階微分方程式 : d2y/dx2 - 3 dy/dx + 2y = 0 (x = 0のとき y = 3 dy/dx = 4)
+;   を変形して、
+;      dy/dx = z, dz/dx = 3z - 2y (x = 0, y = 3, z = 4)
+;   この式をルンゲ-クッタの公式に当てはめて
+;      f(x,y,z) = z
+;      g(x,y,z) = 3z - 2y
+;      y_n+1 = y_n + h/6(b_1 + 2b_2 + 2b_3 + b_4)
+;      z_n+1 = z_n + h/6(c_1 + 2c_2 + 2c_3 + c_4)
+;      b_1 = z_n,          c_1 = 3z_n -2y_n
+;      b_2 = z_n + c_1h/2, c_2 = 3(z_n + c_1h/2) - 2(y_n + b_1h/2)
+;      b_3 = z_n + c_2h/2, c_3 = 3(z_n + c_2h/2) - 2(y_n + b_2h/2)
+;      b_4 = z_n + c_3h,   c_4 = 3(z_n + c_3h) - 2(y_n + b_3h)
+;   この公式を利用して、元の2階微分方程式の数値解
+;   ちなみに、この2階微分方程式の厳密解は、y = 2e^x + e^(2x)。これをRとして数値解と比較する。
+;
+
+(ns p00c_Higher-order-diff-eq)
+
+;; --- 初期値 ------------------------------
+(def x0 (double 0.0))
+(def y0 (double 3.0))
+(def z0 (double 4.0))
+
+(def h (double 0.005)) ; 刻み
+(def dx (double 0.2)) ; 解を打ち出す周期
+(def xmax (double 2.0)) ; 打ち出す範囲
+
+;; --- 微分関数: f(x,y,z) = z ---------------
+(defn f [#^double x, #^double y, #^double z]
+   z)
+
+;; --- 微分関数: g(x,y,z) = 3z -2y -----------
+(defn g [#^double x, #^double y, #^double z]
+   (- (* 3.0 z) (* 2.0 y)))
+
+;; --- 厳密解: r(x,y,z) = 2e^x + 2^(2x) -----
+(defn r [#^double x]
+   (+ (* 2.0 (Math/exp x)) (Math/exp (* 2.0 x))))
+
+(def EPS 0.00000001)
+
+(defn rk []
+   (let [y (atom y0)
+         z (atom z0)
+         ddx (atom (double 0.0))]
+      (doseq [x (range x0 (+ xmax h) h)]
+         (if (>= x (- @ddx EPS))
+             (do (swap! ddx #(+ % dx))
+                 (println (format "%10.4f %10.4f %10.4f"
+                                  x @y (r x)))))
+         (let [h2 (/ h 2.0)
+               b1 (f x @y @z)
+               c1 (g x @y @z)
+               b2 (f (+ x h2) (+ @y (* h2 b1)) (+ @z (* h2 c1)))
+               c2 (g (+ x h2) (+ @y (* h2 b1)) (+ @z (* h2 c1)))
+               b3 (f (+ x h2) (+ @y (* h2 b2)) (+ @z (* h2 c2)))
+               c3 (g (+ x h2) (+ @y (* h2 b2)) (+ @z (* h2 c2)))
+               b4 (f (+ x h)  (+ @y (*  h b3)) (+ @z (*  h c3)))
+               c4 (g (+ x h)  (+ @y (*  h b3)) (+ @z (*  h c3)))]
+            (swap! y #(+ % (* (/ h 6.0)
+                              (+ b1 (* 2.0 b2) (* 2.0 b3) b4))))
+            (swap! z #(+ % (* (/ h 6.0)
+                              (+ c1 (* 2.0 c2) (* 2.0 c3) c4))))))))
+
+(defn m []
+   (do (println (format "%5s %10s %10s" "X" "Y" "R"))
+       (rk)))
