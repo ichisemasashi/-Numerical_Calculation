@@ -8,11 +8,8 @@
 
 (ns p00a_forward-euler)
 
-(def EPS 0.00000001)
-
 ;; --- 初期値 ------------------------------
 (def x0 (double 0.0))
-(def y0 (double 0.0))
 
 (def h (double 0.01)) ; 刻み
 (def dx (double 1.0)) ; 解を打ち出す周期
@@ -21,12 +18,20 @@
 (defn f [#^double x]
    (* 2.0 x))
 
+
 (def x (map double (range x0 (+ xmax h) h)))
 (def fx (map f x))
 
-(def y (reverse (reduce #(cons (+ (reduce + %1) %2) %1) '() (map #(* h %) fx))))
+(def dy (map #(* h %) fx))
+
 (def n (/ dx h))
-(take-nth n x)
-(take-nth n y)
+(def x- (take-nth n x))
 
+(def y- (map #(reduce + %) (partition-all (long n) dy)))
 
+(def y-n (count y-))
+
+(def y (map #(reduce + %) (map #(take %1 y-) (range y-n))))
+
+(do (println "   X\t   Y")
+    (map #(println (format "%7.4f\t%7.4f" %1 (double %2))) x- y))
