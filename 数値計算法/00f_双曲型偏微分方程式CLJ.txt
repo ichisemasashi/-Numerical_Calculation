@@ -1,0 +1,83 @@
+;
+;   FILE NAME: 00f_双曲型偏微分方程式CLJ.txt
+;
+;   弦の方程式: ∂^2u/∂τ^2 = c^2(∂^2u/∂χ^2)とする。
+;   長さlの弦の両端を固定し、中央を時間τ=0でχ=0.5の位置から放つとき
+;   弦の位置u(χ,τ)の時間変化を計算する。
+;   t=cτ/l、x=χ/lと置けば方程式は ∂^2u/∂t^2 = ∂^2u/∂x^2 となり
+;   変数xは0<x<1と無次元化され、差分方程式は
+;    u(i,j+1)=r^2(u(i+1,j) + u(i-1,j)) + 2(1-r^2)u(i,j) - u(i,j-1)
+;    r = k/h
+;   となる。
+;   刻み数: n = l/h
+;   境界条件: u(0,j) = u(1,j) = 0
+;   初期条件: u(i,0) = i/n (i = 1,...,n/2)
+;            u(i,0) = 1 - i/n (i=n/2,...,n)
+;
+;
+
+(ns p00f_hyperbolic)
+
+(def N 20) ; 刻み数
+
+(def h (double (/ 1 N)))  ; 弦の刻み
+(def k (double 0.01))  ; 時間の刻み
+
+;; --- 弦の位置分布の配列 -----------------------
+(def ut- (make-array Double/TYPE (inc N))) ; 前の状態
+(def ut  (make-array Double/TYPE (inc N))) ; 今の状態
+(def ut+ (make-array Double/TYPE (inc N))) ; 次の状態
+
+(defn get-ut- [i]
+   (aget ^doubles ut- i))
+(defn set-ut- [i #^double v]
+   (aset ^doubles ut- i v))
+
+(defn get-ut  [i]
+   (aget ^doubles ut  i))
+(defn set-ut  [i #^double v]
+   (aset ^doubles ut  i v))
+
+(defn get-ut+ [i]
+   (aget ^doubles ut+ i))
+(defn set-ut+ [i #^double v]
+   (aset ^doubles ut+ i v))
+
+;; --- 配列の初期化 ---------------------------
+(defn format-array []
+   (do (doseq [i (range 0 (inc (/ N 2)))]
+          (set-ut i (double (/ i N))))
+       (doseq [i (range (/ N 2) (inc N))]
+          (set-ut i (- 1.0 (double (/ i N)))))
+       (dotimes [i (inc N)]
+          (do (set-ut- i (get-ut i))
+              (set-ut+ i (double 0.0))))))
+
+;; --- 状態の表示 ----------------------------
+(defn pr-1line [t]
+   (do (print (format "%5.3f " (double (* t k))))
+       (doall (map print (map #(format "%6.2f" %)
+                              (take-nth 2 (seq ut)))))
+       (print "\n")))
+
+;; --- 差分計算 ------------------------------
+(defn compute []
+   (let [r (/ k h)
+         q (* r r)
+         s (* 2.0 (- 1.0 q))]
+      (do (doseq [i (range 1 N)]
+             (set-ut+ i (+ (* q (+ (get-ut (inc i))
+                                   (get-ut (dec i))))
+                           (* s (get-ut i))
+                           (- (get-ut- i)))))
+          (dotimes [i (inc N)]
+             (do (set-ut- i (get-ut  i))
+                 (set-ut  i (get-ut+ i)))))))
+
+;; --- メインループ ------------------------
+(defn m []
+   (do (format-array)
+       (dotimes [t 201]
+          (if (= 0 (mod t 10))
+              (pr-1line t))
+          (compute))))

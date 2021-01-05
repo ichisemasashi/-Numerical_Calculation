@@ -17,3 +17,43 @@
 
 (def k (double 0.001)) ; 時間の刻み
 
+(def u (make-array Double/TYPE (inc N)))
+(def tmp (make-array Double/TYPE (inc N)))
+
+(defn set-u [i #^double v]
+   (aset ^doubles u i v))
+(defn get-u [i]
+   (aget ^doubles u i))
+(defn set-tmp [i #^double v]
+   (aset ^doubles tmp i v))
+(defn get-tmp [i]
+   (aget ^doubles tmp i))
+
+(doseq [i (range 1 N)]
+   (set-u i (double 1.0)))
+
+(clojure.pprint/pprint u)
+
+(defn pr-1line [#^double t]
+   (do (print (format "%5.3f " (* t k)))
+       (doseq [i (range 0 (inc N) 2)]
+          (print (format "%5.3f " (get-u i))))
+       (print "\n")))
+
+(defn set-dif []
+   (let [r (/ k (* h h))
+         s (- 1 (* 2.0 r))]
+      (do (doseq [i (range 1 N)]
+             (let [ui+1 (get-u (inc i))
+                   ui   (get-u i)
+                   ui-1 (get-u (dec i))]
+                (set-tmp i (+ (* r (+ ui+1 ui-1)) (* s ui)))))
+          (dotimes [i (inc N)]
+             (set-u i (get-tmp i))))))
+
+(defn m []
+    (doseq [i (range 1 201)]
+       (if (= 0 (mod i 10))
+           (pr-1line i))
+       (set-dif)))
+
