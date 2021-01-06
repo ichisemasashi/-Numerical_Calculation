@@ -1,0 +1,64 @@
+;
+;   FILE NAME: 010_楕円型偏微分方程式CLJ.txt
+;
+;   熱伝導の方程式：∂^2v/∂X^2 + ∂^2v/∂Y^2 = 0ののとき、
+;   1辺の長さlの正方形の板の1辺をT°Cに、他のすべてを0°Cにした
+;   場合の板の温度分布v(X,Y)を計算する。
+;     u = v/T, x = X/l, y = Y/lと置くと差分方程式は
+;   u(i,j) = 1/4(u(i+1,j) + u(i-1,j) + u(i,j+1) + u(i,j-1) - h^2f(i,j))
+;   となる。また、
+;   刻み数 n = l/h
+;   境界条件 u(0,j) = u(n,j) = u(i,0) = 0 (i=0,1,...,n j=0,1,...,n)
+;           u(i,n) = 1 (i=1,2,...,n-1)
+;   差分方程式は1次方程式なので、ガウス-ザイデル法を持ちいる。収束条件としてひとつ前の
+;   状態と比較する。
+;
+
+(ns p010_oblong)
+
+(def N 10) ; 刻み数
+
+(def EPS 0.001)
+
+(def u (make-array Double/TYPE (inc N) (inc N)))
+(def u- (make-array Double/TYPE (inc N) (inc N)))
+
+(defn set-u [i j #^double v]
+   (aset ^doubles u i j v))
+(defn get-u [i j]
+   (aget ^doubles u i j))
+(defn set-u- [i j #^double v]
+   (aset ^doubles u- i j v))
+(defn get-u- [i j]
+   (aget ^doubles u- i j))
+
+(defn format-array []
+   (do (doseq [i (range (inc N)), j (range (inc N))]
+          (set-u i j (double 0.0))
+          (set-u- i j (double 0.0)))
+       (doseq [i (range 1 N)]
+          (set-u i N (double 1.0)))))
+
+(defn pr-array []
+   (dotimes [i (inc N)]
+      (dotimes [j (inc N)]
+         (print (format "%6.3f" (get-u i j))))
+      (println "")))
+
+
+(defn compute []
+   (let [dd (atom (double 0.0))]
+      (doseq [i (range 1 N), j (range 1 N)]
+         (let [u1 (+ (get-u (inc i) j) (get-u (dec i) j))
+               u2 (+ (get-u i (inc j)) (get-u i (dec j)))]
+            (set-u i j (/ (+ u1 u2) 4.0))
+            (swap! dd #(+ % (Math/abs (- (get-u- i j) (get-u i j)))))
+            (set-u- i j (get-u i j))))
+   (if (> @dd EPS)
+       (recur))))
+
+
+(defn m []
+   (format-array)
+   (compute)
+   (pr-array))
