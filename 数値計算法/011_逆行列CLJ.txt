@@ -1,0 +1,84 @@
+;
+;   FILE NAME: 011_逆行列CLJ.txt
+;
+;   逆行列を求める。
+;
+
+(ns p011_inverse)
+
+(def N 3)  ; 行列の次数
+
+(def EPS 0.00001) ; 許容誤差
+
+(def a (make-array Double/TYPE N (* 2 N)))
+
+(defn get-arr [i j]
+   (aget ^doubles a i j))
+
+(defn set-arr [i j #^double v]
+   (aset ^double a i j v))
+
+(defn set-helper [i #^double x #^double y #^double z]
+   (do (set-arr i 0 x)
+       (set-arr i 1 y)
+       (set-arr i 2 z)))
+(defn set-helper2 [i #^double x #^double y #^double z]
+   (do (set-arr i 3 x)
+       (set-arr i 4 y)
+       (set-arr i 5 z)))
+
+;; --- 行列の初期化 ------------------------------
+(defn format-arr []
+   (do ;; ---- 係数行列の設定 ---
+       (set-helper 0 2.0 1.0 3.0)
+       (set-helper 1 1.0 3.0 2.0)
+       (set-helper 2 3.0 2.0 1.0)
+       ;; ---- 単位行列の設定 ---
+       (set-helper2 0 1.0 0.0 0.0)
+       (set-helper2 1 0.0 1.0 0.0)
+       (set-helper2 2 0.0 0.0 1.0)))
+
+(clojure.pprint/pprint a)
+
+;; --- 結果の表示 --------------------------------
+(defn pr-arr []
+   (dotimes [i N]
+      (doseq [j (range N (* 2 N))]
+         (print (format "%7.3f " (get-arr i j))))
+      (newline)))
+
+
+;; --- ピボットとなるxyz変数の係数を1にする ----
+(defn piv1 [i piv]
+   (doseq [j (range 1 (* 2 N))]
+      (set-arr i j (/ (get-arr i j) piv))))
+
+;; --- 不要な項の削除 -----------------------
+(defn hakidashi [i]
+   (dotimes [k N]
+      (let [del (get-arr k i)]
+         (doseq [j (range i (* 2 N))]
+            (if (not= k i)
+                (set-arr k j (- (get-arr k j)
+                                (* del (get-arr i j)))))))))
+
+(defn compute []
+   (loop [i 0]
+      (if (<= N i)
+             ;; ループの正常終了
+             0
+             ;; 計算続行
+             (let [pivot (get-arr i i)]
+                (if (< (Math/abs pivot) EPS)
+                    (do (println "ピボットが許容誤差以下")
+                        1) ;; 異常終了
+                    (do (piv1 i pivot)
+                        (hakidashi i)
+                        (recur (inc i))))))))
+
+(defn m []
+   (do (format-arr)
+       (if (= 0 (compute))
+           (pr-arr))))
+
+
